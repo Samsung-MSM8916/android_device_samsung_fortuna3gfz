@@ -25,40 +25,38 @@
    IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
 
-#include <stdlib.h>
-#include <unistd.h>
+#define _REALLY_INCLUDE_SYS__SYSTEM_PROPERTIES_H_
+#include <sys/_system_properties.h>
 
-#include <cutils/properties.h>
+#include <stdio.h>
+#include <stdlib.h>
+#include <sys/sysinfo.h>
+
+#include <android-base/file.h>
+#include <android-base/properties.h>
+#include <android-base/strings.h>
+
+#include "property_service.h"
 #include "vendor_init.h"
-#include "log.h"
-#include "util.h"
+
+using android::base::GetProperty;
 
 void vendor_load_properties()
 {
-    char platform[PROP_VALUE_MAX];
-    char bootloader[PROP_VALUE_MAX];
-    char device[PROP_VALUE_MAX];
-    char devicename[PROP_VALUE_MAX];
-    int rc;
+    std::string bootloader = GetProperty("ro.bootloader", "");
 
-    rc = property_get("ro.board.platform", platform, NULL);
-    if (!rc || strncmp(platform, ANDROID_TARGET, PROP_VALUE_MAX))
-        return;
-
-    property_get("ro.bootloader", bootloader, NULL);
-
-    if (strstr(bootloader, "G530FZXXU1BPI3")) {
-        property_set("ro.product.model", "SM-G530FZ");
-        property_set("ro.product.device", "fortunafz");
+    if (bootloader.find("G530FZXXU1BPI3") == 0) {
+        property_override("ro.product.model", "SM-G530FZ");
+        property_override("ro.product.device", "fortunafz");
         property_set("persist.radio.multisim.config", "none");
     } else {
-        property_set("ro.product.model", "SM-G530FZ");
-        property_set("ro.product.device", "fortunafz");
+        property_override("ro.product.model", "SM-G530FZ");
+        property_override("ro.product.device", "fortunafz");
         property_set("persist.radio.multisim.config", "dsds");
         property_set("ro.multisim.simslotcount", "2");
     }
 
-    property_get("ro.product.device", device, NULL);
-    strlcpy(devicename, device, sizeof(devicename));
-    ERROR("Found bootloader id %s setting build properties for %s device\n", bootloader, devicename);
+    std::string device = GetProperty("ro.product.device", "");
+    LOG(ERROR) << "Found bootloader id " << bootloader <<  " setting build properties for "
+        << device <<  " device" << std::endl;
 }
